@@ -71,10 +71,6 @@ Notas
 
 Ajusta servidor/credenciales de SQL.
 
-TrustServerCertificate=True facilita dev/local.
-
-MultipleActiveResultSets=true (MARS) permite múltiples DataReader por conexión.
-
 La SecretKey debe tener 32+ caracteres.
 
 ▶️ Ejecutar
