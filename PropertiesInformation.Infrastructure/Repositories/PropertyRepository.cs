@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
+using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -126,7 +127,7 @@ namespace PropertiesInformation.Infrastructure.Repositories
             }
         }
 
-        public async Task<IReadOnlyList<Property>> ListAsync(string? search, int? ownerId, decimal? minPrice, decimal? maxPrice, CancellationToken ct = default)
+        public async Task<IReadOnlyList<Property>> ListAsync(string? codeInternal, int? ownerId, decimal? minPrice, decimal? maxPrice, string? address, int? year, string? name, CancellationToken ct = default)
         {
             const string proc = "dbo.Property_List";
             await using var conn = new SqlConnection(_cs);
@@ -137,12 +138,15 @@ namespace PropertiesInformation.Infrastructure.Repositories
             {
                 var list = new List<Property>();
                 using var cmd = CreateSp(conn, tx, proc);
-                cmd.Parameters.Add(new SqlParameter("@Search", SqlDbType.NVarChar, 150) { Value = (object?)search ?? DBNull.Value });
+                cmd.Parameters.Add(new SqlParameter("@CodeInternal", SqlDbType.NVarChar, 50) { Value = (object?)codeInternal ?? DBNull.Value });
                 cmd.Parameters.Add(new SqlParameter("@OwnerId", SqlDbType.Int) { Value = (object?)ownerId ?? DBNull.Value });
                 var pMin = new SqlParameter("@MinPrice", SqlDbType.Decimal) { Precision = 18, Scale = 2, Value = (object?)minPrice ?? DBNull.Value };
                 var pMax = new SqlParameter("@MaxPrice", SqlDbType.Decimal) { Precision = 18, Scale = 2, Value = (object?)maxPrice ?? DBNull.Value };
                 cmd.Parameters.Add(pMin);
                 cmd.Parameters.Add(pMax);
+                cmd.Parameters.Add(new SqlParameter("@Address", SqlDbType.NVarChar, 200) { Value = (object?)address ?? DBNull.Value });
+                cmd.Parameters.Add(new SqlParameter("@Year", SqlDbType.Int) { Value = (object?)year ?? DBNull.Value });
+                cmd.Parameters.Add(new SqlParameter("@Name", SqlDbType.NVarChar, 150) { Value = (object?)name ?? DBNull.Value });
 
                 await using (var reader = await cmd.ExecuteReaderAsync(ct))
                 {

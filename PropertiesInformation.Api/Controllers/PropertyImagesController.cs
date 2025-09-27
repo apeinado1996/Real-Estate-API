@@ -20,7 +20,12 @@ namespace PropertiesInformation.Api.Controllers
             _propRepo = propRepo;
         }
 
-        // LIST 
+        /// <summary>
+        /// List Property Images
+        /// </summary>
+        /// <param name="idProperty"></param>
+        /// <param name="ct"></param>
+        /// <returns></returns>
         [HttpGet]
         public async Task<IActionResult> List(int idProperty, CancellationToken ct)
         {
@@ -33,7 +38,14 @@ namespace PropertiesInformation.Api.Controllers
             return Ok(ApiResponse<IEnumerable<PropertyImageResponse>>.Ok(dto, HttpContext));
         }
 
-        // GET metadata
+        /// <summary>
+        /// Get property images
+        /// </summary>
+        /// <param name="idProperty"></param>
+        /// <param name="imageId"></param>
+        /// <param name="includeBase64"></param>
+        /// <param name="ct"></param>
+        /// <returns></returns>
         [HttpGet("{imageId:int}")]
         public async Task<IActionResult> Get(int idProperty, int imageId, [FromQuery] bool includeBase64, CancellationToken ct)
         {
@@ -56,7 +68,13 @@ namespace PropertiesInformation.Api.Controllers
             return Ok(ApiResponse<PropertyImageWithBase64Response>.Ok(r64, HttpContext));
         }
 
-        // CREATE (multipart/form-data)
+        /// <summary>
+        /// Create property Images
+        /// </summary>
+        /// <param name="idProperty"></param>
+        /// <param name="req"></param>
+        /// <param name="ct"></param>
+        /// <returns></returns>
         [HttpPost]
         [Consumes("multipart/form-data")]
         public async Task<IActionResult> Create(int idProperty, [FromForm] PropertyImageUploadRequest req, CancellationToken ct)
@@ -77,7 +95,14 @@ namespace PropertiesInformation.Api.Controllers
             return CreatedAtAction(nameof(Get), new { idProperty, imageId = newId }, ApiResponse<PropertyImageResponse>.Ok(dto, HttpContext));
         }
 
-        // REPLACE FILE (multipart)
+        /// <summary>
+        /// Update Property images
+        /// </summary>
+        /// <param name="idProperty"></param>
+        /// <param name="imageId"></param>
+        /// <param name="req"></param>
+        /// <param name="ct"></param>
+        /// <returns></returns>
         [HttpPut("{imageId:int}/file")]
         [Consumes("multipart/form-data")]
         public async Task<IActionResult> ReplaceFile(int idProperty, int imageId, [FromForm] PropertyImageReplaceFileRequest req, CancellationToken ct)
@@ -98,7 +123,14 @@ namespace PropertiesInformation.Api.Controllers
             return Ok(ApiResponse<PropertyImageResponse>.Ok(dto, HttpContext));
         }
 
-        // ENABLE / DISABLE
+        /// <summary>
+        /// Enable property images
+        /// </summary>
+        /// <param name="idProperty"></param>
+        /// <param name="imageId"></param>
+        /// <param name="req"></param>
+        /// <param name="ct"></param>
+        /// <returns></returns>
         [HttpPut("{imageId:int}/enable")]
         [Consumes("application/json")]
         public async Task<IActionResult> SetEnabled(int idProperty, int imageId, [FromBody] PropertyImageEnableRequest req, CancellationToken ct)
@@ -114,7 +146,13 @@ namespace PropertiesInformation.Api.Controllers
             return Ok(ApiResponse<PropertyImageResponse>.Ok(dto, HttpContext));
         }
 
-        // DELETE
+        /// <summary>
+        /// Delete property image
+        /// </summary>
+        /// <param name="idProperty"></param>
+        /// <param name="imageId"></param>
+        /// <param name="ct"></param>
+        /// <returns></returns>
         [HttpDelete("{imageId:int}")]
         public async Task<IActionResult> Delete(int idProperty, int imageId, CancellationToken ct)
         {

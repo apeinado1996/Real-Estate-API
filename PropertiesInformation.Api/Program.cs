@@ -6,12 +6,15 @@ using Microsoft.AspNetCore.Mvc.Formatters;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using PropertiesInformation.Api.Authentication;
 using PropertiesInformation.Api.Class;
+using PropertiesInformation.Api.Services;
 using PropertiesInformation.Core.Entities;
 using PropertiesInformation.Core.Interface;
 using PropertiesInformation.Infrastructure.Repositories;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 using System.Text;
-using Microsoft.AspNetCore.Http;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -42,8 +45,10 @@ builder.Services.Configure<ApiBehaviorOptions>(options =>
     };
 });
 
+// Initialize class and references (dependency injection)
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection("Jwt"));
+builder.Services.AddScoped<IJwtTokenService, JwtToken>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
 builder.Services.AddScoped<IOwnerRepository, OwnerRepository>();
@@ -51,13 +56,9 @@ builder.Services.AddScoped<IPropertyRepository, PropertyRepository>();
 builder.Services.AddScoped<IPropertyImageRepository, PropertyImageRepository>();
 builder.Services.AddScoped<IPropertyTraceRepository, PropertyTraceRepository>();
 
-var jwtSection = builder.Configuration.GetSection("Jwt");
-var issuer = jwtSection["Issuer"] ?? throw new InvalidOperationException("Missing Jwt:Issuer");
-var audience = jwtSection["Audience"] ?? throw new InvalidOperationException("Missing Jwt:Audience");
-var secretKey = jwtSection["SecretKey"] ?? throw new InvalidOperationException("Missing Jwt:SecretKey");
-var keyBytes = Encoding.UTF8.GetBytes(secretKey);
-if (keyBytes.Length < 32) throw new InvalidOperationException("Jwt:SecretKey must be at least 32 characters.");
-var key = new SymmetricSecurityKey(keyBytes);
+// jwt auth
+var jwt = builder.Configuration.GetSection("Jwt").Get<JwtOptions>() ?? throw new InvalidOperationException("Missing Jwt section");
+var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwt.SecretKey));
 
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -69,15 +70,35 @@ builder.Services
             ValidateAudience = true,
             ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
-            ValidIssuer = issuer,
-            ValidAudience = audience,
+            ValidIssuer = jwt.Issuer,
+            ValidAudience = jwt.Audience,
             IssuerSigningKey = key,
-            ClockSkew = TimeSpan.Zero
+            ClockSkew = TimeSpan.Zero,
+
+            NameClaimType = JwtRegisteredClaimNames.UniqueName,
+            RoleClaimType = ClaimTypes.Role
+        };
+
+        options.Events = new JwtBearerEvents
+        {
+            OnAuthenticationFailed = ctx =>
+            {
+                var lg = ctx.HttpContext.RequestServices.GetRequiredService<ILoggerFactory>().CreateLogger("JWT");
+                lg.LogError(ctx.Exception, "JWT auth failed");
+                return Task.CompletedTask;
+            },
+            OnChallenge = ctx =>
+            {
+                var lg = ctx.HttpContext.RequestServices.GetRequiredService<ILoggerFactory>().CreateLogger("JWT");
+                lg.LogWarning("JWT challenge. Error={Error} Desc={Desc}", ctx.Error, ctx.ErrorDescription);
+                return Task.CompletedTask;
+            }
         };
     });
 
 builder.Services.AddAuthorization();
 
+// Options Swagger
 builder.Services.AddSwaggerGen(options =>
 {
     const string groupName = "v1";
@@ -124,12 +145,13 @@ builder.Services.AddSwaggerGen(options =>
 
 var app = builder.Build();
 
+// Errors controls
 app.UseExceptionHandler(errorApp =>
 {
     errorApp.Run(async context =>
     {
         var ex = context.Features.Get<IExceptionHandlerFeature>()?.Error;
-        
+
         var (status, title) = ex switch
         {
             UnauthorizedAccessException => (StatusCodes.Status401Unauthorized, "Unauthorized"),
@@ -137,7 +159,7 @@ app.UseExceptionHandler(errorApp =>
             ArgumentException => (StatusCodes.Status400BadRequest, "Bad request"),
             _ => (StatusCodes.Status500InternalServerError, "An unexpected error occurred.")
         };
-        
+
         var logger = context.RequestServices.GetRequiredService<ILoggerFactory>()
                           .CreateLogger("GlobalException");
         if (ex is not null) logger.LogError(ex, "Unhandled exception");
@@ -157,6 +179,7 @@ app.UseExceptionHandler(errorApp =>
     });
 });
 
+// Status codes
 app.UseStatusCodePages(async ctx =>
 {
     var resp = ctx.HttpContext.Response;

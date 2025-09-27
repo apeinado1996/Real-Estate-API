@@ -135,7 +135,7 @@ namespace PropertiesInformation.Infrastructure.Repositories
             }
         }
 
-        public async Task<IReadOnlyList<Owner>> ListAsync(string? search, CancellationToken ct = default)
+        public async Task<IReadOnlyList<Owner>> ListAsync(CancellationToken ct = default)
         {
             const string proc = "dbo.Owner_List";
             await using var conn = new SqlConnection(_cs);
@@ -145,7 +145,6 @@ namespace PropertiesInformation.Infrastructure.Repositories
             {
                 var list = new List<Owner>();
                 using var cmd = CreateSp(conn, tx, proc);
-                cmd.Parameters.Add(new SqlParameter("@Search", SqlDbType.NVarChar, 150) { Value = (object?)search ?? DBNull.Value });
 
                 await using var reader = await cmd.ExecuteReaderAsync(ct);
                 while (await reader.ReadAsync(ct))
@@ -159,6 +158,7 @@ namespace PropertiesInformation.Infrastructure.Repositories
                     });
                 }
 
+                await reader.CloseAsync();
                 await tx.CommitAsync(ct);
                 return list;
             }

@@ -15,16 +15,32 @@ namespace PropertiesInformation.Api.Controllers
         private readonly IPropertyRepository _repo;
         public PropertiesController(IPropertyRepository repo) => _repo = repo;
 
-        // LIST with optional filters
+        /// <summary>
+        /// Lis Properties
+        /// </summary>
+        /// <param name="codeInternal"></param>
+        /// <param name="ownerId"></param>
+        /// <param name="minPrice"></param>
+        /// <param name="maxPrice"></param>
+        /// <param name="address"></param>
+        /// <param name="year"></param>
+        /// <param name="name"></param>
+        /// <param name="ct"></param>
+        /// <returns></returns>
         [HttpGet]
-        public async Task<IActionResult> List([FromQuery] string? search, [FromQuery] int? ownerId, [FromQuery] decimal? minPrice, [FromQuery] decimal? maxPrice, CancellationToken ct)
+        public async Task<IActionResult> List([FromQuery] string? codeInternal, [FromQuery] int? ownerId, [FromQuery] decimal? minPrice, [FromQuery] decimal? maxPrice, string? address, int? year, string? name, CancellationToken ct)
         {
-            var items = await _repo.ListAsync(search, ownerId, minPrice, maxPrice, ct);
+            var items = await _repo.ListAsync(codeInternal, ownerId, minPrice, maxPrice, address, year, name, ct);
             var data = items.Select(p => new PropertyResponse(p.Id, p.Name, p.Address, p.Price, p.CodeInternal, p.Year, p.IdOwner));
             return Ok(ApiResponse<IEnumerable<PropertyResponse>>.Ok(data, HttpContext));
         }
 
-        // GET BY ID
+        /// <summary>
+        /// Get Property by Id
+        /// </summary>
+        /// <param name="id"></param>
+        /// <param name="ct"></param>
+        /// <returns></returns>
         [HttpGet("{id:int}")]
         public async Task<IActionResult> Get(int id, CancellationToken ct)
         {
@@ -36,7 +52,12 @@ namespace PropertiesInformation.Api.Controllers
             return Ok(ApiResponse<PropertyResponse>.Ok(dto, HttpContext));
         }
 
-        // CREATE
+        /// <summary>
+        /// Create Property
+        /// </summary>
+        /// <param name="req"></param>
+        /// <param name="ct"></param>
+        /// <returns></returns>
         [HttpPost]
         [Consumes("application/json")]
         public async Task<IActionResult> Create([FromBody] PropertyCreateRequest req, CancellationToken ct)
@@ -63,7 +84,13 @@ namespace PropertiesInformation.Api.Controllers
             return CreatedAtAction(nameof(Get), new { id }, ApiResponse<PropertyResponse>.Ok(dto, HttpContext));
         }
 
-        // UPDATE
+        /// <summary>
+        /// Update Property
+        /// </summary>
+        /// <param name="id"></param>
+        /// <param name="req"></param>
+        /// <param name="ct"></param>
+        /// <returns></returns>
         [HttpPut("{id:int}")]
         [Consumes("application/json")]
         public async Task<IActionResult> Update(int id, [FromBody] PropertyUpdateRequest req, CancellationToken ct)
@@ -90,7 +117,12 @@ namespace PropertiesInformation.Api.Controllers
             return Ok(ApiResponse<PropertyResponse>.Ok(dto, HttpContext));
         }
 
-        // DELETE
+        /// <summary>
+        /// Delete Property
+        /// </summary>
+        /// <param name="id"></param>
+        /// <param name="ct"></param>
+        /// <returns></returns>
         [HttpDelete("{id:int}")]
         public async Task<IActionResult> Delete(int id, CancellationToken ct)
         {
@@ -102,7 +134,14 @@ namespace PropertiesInformation.Api.Controllers
             return Ok(ApiResponse<object>.Ok(new { id, deleted = true }, HttpContext));
         }
 
-        // CHANGE PRICE
+        
+        /// <summary>
+        /// Update price
+        /// </summary>
+        /// <param name="id"></param>
+        /// <param name="req"></param>
+        /// <param name="ct"></param>
+        /// <returns></returns>
         [HttpPut("{id:int}/price")]
         [Consumes("application/json")]
         public async Task<IActionResult> ChangePrice(int id, [FromBody] PropertyChangePriceRequest req, CancellationToken ct)

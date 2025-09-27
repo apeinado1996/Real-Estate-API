@@ -8,7 +8,7 @@ namespace PropertiesInformation.Core.Interface
         Task UpdateAsync(Owner owner, CancellationToken ct = default);
         Task DeleteAsync(int id, CancellationToken ct = default);
         Task<Owner?> GetByIdAsync(int id, bool includePhoto = false, CancellationToken ct = default);
-        Task<IReadOnlyList<Owner>> ListAsync(string? search, CancellationToken ct = default);
+        Task<IReadOnlyList<Owner>> ListAsync(CancellationToken ct = default);
         Task UpdatePhotoAsync(int id, byte[] photo, CancellationToken ct = default);
         Task<byte[]?> GetPhotoAsync(int id, CancellationToken ct = default);
     }

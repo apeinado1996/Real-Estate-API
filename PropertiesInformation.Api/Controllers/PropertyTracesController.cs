@@ -21,7 +21,14 @@ namespace PropertiesInformation.Api.Controllers
             _propRepo = propRepo;
         }
 
-        // LIST
+        /// <summary>
+        /// List Property Traces
+        /// </summary>
+        /// <param name="idProperty"></param>
+        /// <param name="fromDate"></param>
+        /// <param name="toDate"></param>
+        /// <param name="ct"></param>
+        /// <returns></returns>
         [HttpGet]
         public async Task<IActionResult> List(int idProperty, [FromQuery] DateTime? fromDate, [FromQuery] DateTime? toDate, CancellationToken ct)
         {
@@ -34,7 +41,13 @@ namespace PropertiesInformation.Api.Controllers
             return Ok(ApiResponse<IEnumerable<PropertyTraceResponse>>.Ok(dto, HttpContext));
         }
 
-        // GET BY ID
+        /// <summary>
+        /// Get property trace
+        /// </summary>
+        /// <param name="idProperty"></param>
+        /// <param name="traceId"></param>
+        /// <param name="ct"></param>
+        /// <returns></returns>
         [HttpGet("{traceId:int}")]
         public async Task<IActionResult> Get(int idProperty, int traceId, CancellationToken ct)
         {
@@ -46,7 +59,13 @@ namespace PropertiesInformation.Api.Controllers
             return Ok(ApiResponse<PropertyTraceResponse>.Ok(dto, HttpContext));
         }
 
-        // CREATE
+        /// <summary>
+        /// Create property trace
+        /// </summary>
+        /// <param name="idProperty"></param>
+        /// <param name="req"></param>
+        /// <param name="ct"></param>
+        /// <returns></returns>
         [HttpPost]
         [Consumes("application/json")]
         public async Task<IActionResult> Create(int idProperty, [FromBody] PropertyTraceCreateRequest req, CancellationToken ct)
@@ -74,7 +93,14 @@ namespace PropertiesInformation.Api.Controllers
             return CreatedAtAction(nameof(Get), new { idProperty, traceId = id }, ApiResponse<PropertyTraceResponse>.Ok(dto, HttpContext));
         }
 
-        // UPDATE
+        /// <summary>
+        /// Update property trace
+        /// </summary>
+        /// <param name="idProperty"></param>
+        /// <param name="traceId"></param>
+        /// <param name="req"></param>
+        /// <param name="ct"></param>
+        /// <returns></returns>
         [HttpPut("{traceId:int}")]
         [Consumes("application/json")]
         public async Task<IActionResult> Update(int idProperty, int traceId, [FromBody] PropertyTraceUpdateRequest req, CancellationToken ct)
@@ -100,7 +126,13 @@ namespace PropertiesInformation.Api.Controllers
             return Ok(ApiResponse<PropertyTraceResponse>.Ok(dto, HttpContext));
         }
 
-        // DELETE
+        /// <summary>
+        /// Delete property trace
+        /// </summary>
+        /// <param name="idProperty"></param>
+        /// <param name="traceId"></param>
+        /// <param name="ct"></param>
+        /// <returns></returns>
         [HttpDelete("{traceId:int}")]
         public async Task<IActionResult> Delete(int idProperty, int traceId, CancellationToken ct)
         {
@@ -112,7 +144,14 @@ namespace PropertiesInformation.Api.Controllers
             return Ok(ApiResponse<object>.Ok(new { id = traceId, deleted = true }, HttpContext));
         }
 
-        // SUMMARY
+        /// <summary>
+        /// Summary properties traces
+        /// </summary>
+        /// <param name="idProperty"></param>
+        /// <param name="fromDate"></param>
+        /// <param name="toDate"></param>
+        /// <param name="ct"></param>
+        /// <returns></returns>
         [HttpGet("summary")]
         public async Task<IActionResult> Summary(int idProperty, [FromQuery] DateTime? fromDate, [FromQuery] DateTime? toDate, CancellationToken ct)
         {

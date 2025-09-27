@@ -2,14 +2,13 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
-using Microsoft.IdentityModel.Tokens;
+using PropertiesInformation.Api.Authentication;
 using PropertiesInformation.Api.Class;
 using PropertiesInformation.Api.DTOs;
 using PropertiesInformation.Core.Entities;
 using PropertiesInformation.Core.Interface;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
-using System.Text;
 
 namespace PropertiesInformation.Api.Controllers
 {
@@ -20,18 +19,22 @@ namespace PropertiesInformation.Api.Controllers
         private readonly IUserRepository _users;
         private readonly IPasswordHasher<User> _hasher;
         private readonly JwtOptions _options;
-        private readonly SigningCredentials _creds;
+        private readonly IJwtTokenService _tokens;
 
-        public AuthController(IUserRepository users, IPasswordHasher<User> hasher, IOptions<JwtOptions> options)
+        public AuthController(IUserRepository users, IPasswordHasher<User> hasher, IOptions<JwtOptions> options, IJwtTokenService tokens)
         {
             _users = users;
             _hasher = hasher;
             _options = options.Value;
-
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_options.SecretKey));
-            _creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+            _tokens = tokens;
         }
 
+        /// <summary>
+        /// Authenticate
+        /// </summary>
+        /// <param name="req"></param>
+        /// <param name="ct"></param>
+        /// <returns></returns>
         [HttpPost("login")]
         [AllowAnonymous]
         public async Task<IActionResult> Login([FromBody] AuthLoginRequest req, CancellationToken ct)
@@ -57,20 +60,46 @@ namespace PropertiesInformation.Api.Controllers
                 await _users.UpdateAsync(user, ct);
             }
 
-            var (token, exp) = GenerateJwtToken(user);
+            var (token, exp) = _tokens.GenerateJwtToken(user);
             return Ok(new AuthLoginResponse(token, exp));
         }
 
+        /// <summary>
+        /// Healt status api
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet("health")]
+        [AllowAnonymous]
+        public IActionResult Health()
+        {
+            return Ok(new { status = 200, message = "OK" });
+        }
+
+        /// <summary>
+        /// Get profile
+        /// </summary>
+        /// <returns></returns>
         [HttpGet("me")]
         [Authorize]
         public IActionResult Me()
         {
-            var id = User.FindFirstValue(JwtRegisteredClaimNames.Sub);
-            var name = User.Identity?.Name ?? User.FindFirstValue(JwtRegisteredClaimNames.UniqueName);
-            var roles = User.FindAll(ClaimTypes.Role).Select(c => c.Value);
-            return Ok(new { id, name, roles });
+            var id = User.FindFirstValue(JwtRegisteredClaimNames.Sub) ?? User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var name = User.FindFirstValue(JwtRegisteredClaimNames.UniqueName) ?? User.Identity?.Name ?? User.FindFirstValue(ClaimTypes.Name);
+            var rol = string.Empty;
+            var rols = User.FindAll(ClaimTypes.Role).Select(c => c.Value);
+
+            if (rols.Count() > 0)
+                rol = rols.FirstOrDefault("Rol");
+
+            return Ok(new { id, name, rol });
         }
 
+        /// <summary>
+        /// Register new users
+        /// </summary>
+        /// <param name="req"></param>
+        /// <param name="ct"></param>
+        /// <returns></returns>
         [HttpPost("register")]
         [AllowAnonymous]
         public async Task<IActionResult> Register([FromBody] AuthRegisterRequest req, CancellationToken ct)
@@ -97,35 +126,8 @@ namespace PropertiesInformation.Api.Controllers
             user.PasswordHash = _hasher.HashPassword(user, req.Password);
             user = await _users.AddAsync(user, ct);
 
-            var (token, exp) = GenerateJwtToken(user);
+            var (token, exp) = _tokens.GenerateJwtToken(user);
             return Ok(new AuthLoginResponse(token, exp));
-        }
-
-        private (string token, DateTime expiresUtc) GenerateJwtToken(User user)
-        {
-            var now = DateTime.UtcNow;
-            var expires = now.AddMinutes(_options.AccessTokenMinutes);
-
-            var claims = new List<Claim>
-            {
-                new(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
-                new(JwtRegisteredClaimNames.UniqueName, user.UserName),
-                new(JwtRegisteredClaimNames.Email, user.Email),
-                new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString("N"))
-            };
-
-            claims.Add(new Claim("Rol", user.Rol));
-
-            var jwt = new JwtSecurityToken(
-                issuer: _options.Issuer,
-                audience: _options.Audience,
-                claims: claims,
-                notBefore: now,
-                expires: expires,
-                signingCredentials: _creds
-            );
-
-            return (new JwtSecurityTokenHandler().WriteToken(jwt), expires);
-        }
+        }       
     }
 }

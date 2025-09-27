@@ -7,7 +7,6 @@ using PropertiesInformation.Core.Interface;
 
 namespace PropertiesInformation.Api.Controllers
 {
-
     [ApiController]
     [Route("api/owners")]
     [Authorize]
@@ -16,14 +15,25 @@ namespace PropertiesInformation.Api.Controllers
         private readonly IOwnerRepository _repo;
         public OwnersController(IOwnerRepository repo) => _repo = repo;
 
+        /// <summary>
+        /// List Ownes
+        /// </summary>
+        /// <param name="ct"></param>
+        /// <returns></returns>
         [HttpGet]
-        public async Task<IActionResult> List([FromQuery] string? search, CancellationToken ct)
+        public async Task<IActionResult> List(CancellationToken ct)
         {
-            var items = await _repo.ListAsync(search, ct);
+            var items = await _repo.ListAsync(ct);
             var data = items.Select(o => new OwnerResponse(o.Id, o.Name, o.Address, o.Birthday));
             return Ok(ApiResponse<IEnumerable<OwnerResponse>>.Ok(data, HttpContext));
         }
 
+        /// <summary>
+        /// Get owner by id
+        /// </summary>
+        /// <param name="id"></param>
+        /// <param name="ct"></param>
+        /// <returns></returns>
         [HttpGet("{id:int}")]
         public async Task<IActionResult> Get(int id, CancellationToken ct)
         {
@@ -35,6 +45,12 @@ namespace PropertiesInformation.Api.Controllers
             return Ok(ApiResponse<OwnerResponse>.Ok(dto, HttpContext));
         }
 
+        /// <summary>
+        /// Create owner
+        /// </summary>
+        /// <param name="req"></param>
+        /// <param name="ct"></param>
+        /// <returns></returns>
         [HttpPost("form")]
         [Consumes("multipart/form-data")]
         public async Task<IActionResult> Create([FromForm] OwnerCreateRequest req, CancellationToken ct)
@@ -63,6 +79,13 @@ namespace PropertiesInformation.Api.Controllers
             return CreatedAtAction(nameof(Get), new { id }, ApiResponse<OwnerResponse>.Ok(dto, HttpContext));
         }
 
+        /// <summary>
+        /// Update Owner
+        /// </summary>
+        /// <param name="id"></param>
+        /// <param name="req"></param>
+        /// <param name="ct"></param>
+        /// <returns></returns>
         [HttpPut("{id:int}")]
         public async Task<IActionResult> Update(int id, [FromBody] OwnerUpdateRequest req, CancellationToken ct)
         {
@@ -84,6 +107,13 @@ namespace PropertiesInformation.Api.Controllers
             return Ok(ApiResponse<OwnerResponse>.Ok(dto, HttpContext));
         }
 
+        /// <summary>
+        /// update Photo
+        /// </summary>
+        /// <param name="id"></param>
+        /// <param name="req"></param>
+        /// <param name="ct"></param>
+        /// <returns></returns>
         [HttpPut("{id:int}/photo")]
         [Consumes("multipart/form-data")]
         public async Task<IActionResult> UpdatePhoto(int id, [FromForm] OwnerFileUploadRequest req, CancellationToken ct)
@@ -102,6 +132,12 @@ namespace PropertiesInformation.Api.Controllers
             return Ok(ApiResponse<object>.Ok(new { id, photoUpdated = true }, HttpContext));
         }
 
+        /// <summary>
+        /// Delete Owner
+        /// </summary>
+        /// <param name="id"></param>
+        /// <param name="ct"></param>
+        /// <returns></returns>
         [HttpDelete("{id:int}")]
         public async Task<IActionResult> Delete(int id, CancellationToken ct)
         {
